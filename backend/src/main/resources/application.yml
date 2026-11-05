@@ -1,0 +1,121 @@
+spring:
+  application:
+    name: school-erp
+  flyway:
+    # Flyway is run programmatically: master DB at startup, tenant DBs at provisioning and startup.
+    enabled: false
+  sql:
+    init:
+      mode: never
+  jpa:
+    open-in-view: false
+    # Both must be set explicitly, otherwise Spring/Hibernate open a connection at boot to detect them.
+    database: mysql
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: none
+    properties:
+      # No tenant is bound while the application boots, so Hibernate must not open a connection at startup.
+      hibernate.boot.allow_jdbc_metadata_access: false
+      hibernate.jdbc.time_zone: UTC
+  jackson:
+    default-property-inclusion: non_null
+  mvc:
+    problemdetails:
+      enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: ${REDIS_TIMEOUT:200ms}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
+    listener:
+      simple:
+        acknowledge-mode: manual
+        default-requeue-rejected: false
+        prefetch: 10
+
+server:
+  port: 8080
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  health:
+    db:
+      # The primary DataSource is tenant-routed and cannot be probed without a tenant.
+      enabled: false
+    redis:
+      enabled: false
+    rabbit:
+      enabled: false
+
+app:
+  master:
+    url: ${APP_MASTER_URL:jdbc:mysql://localhost:3307/school_master?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${APP_MASTER_USER:root}
+    password: ${APP_MASTER_PASSWORD:root}
+  tenancy:
+    db-host: ${APP_TENANT_DB_HOST:localhost}
+    db-port: ${APP_TENANT_DB_PORT:3307}
+    db-params: ${APP_TENANT_DB_PARAMS:?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    base-domain: ${APP_BASE_DOMAIN:}
+    create-db-user: ${APP_TENANT_CREATE_DB_USER:true}
+    db-user-host: ${APP_TENANT_DB_USER_HOST:%}
+    pool-max-size: ${APP_TENANT_POOL_MAX:5}
+    migrate-on-startup: ${APP_TENANT_MIGRATE_ON_STARTUP:true}
+  platform:
+    # Development defaults only. The prod profile requires real values from the environment.
+    api-key: ${APP_PLATFORM_API_KEY:dev-platform-key}
+  crypto:
+    # Base64 encoded 32 byte key. Development default only.
+    key: ${APP_CRYPTO_KEY:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
+  jwt:
+    # Base64 encoded >=32 byte HMAC secret. Development default only.
+    secret: ${APP_JWT_SECRET:dGhpcy1pcy1hLWRldi1qd3Qtc2VjcmV0LWtleS0zMi1ieXRlcy1sb25nIQ==}
+    access-token-ttl-seconds: ${APP_JWT_ACCESS_TTL:900}
+    refresh-token-ttl-seconds: ${APP_JWT_REFRESH_TTL:604800}
+  rate-limit:
+    auth-requests-per-minute: ${APP_RATE_LIMIT_AUTH_RPM:10}
+    public-verify-requests-per-minute: ${APP_RATE_LIMIT_PUBLIC_VERIFY_RPM:30}
+    sensitive-mutation-requests-per-minute: ${APP_RATE_LIMIT_SENSITIVE_RPM:20}
+    general-api-requests-per-minute: ${APP_RATE_LIMIT_API_RPM:300}
+  cache:
+    settings-ttl-seconds: ${APP_CACHE_SETTINGS_TTL:600}
+    permissions-ttl-seconds: ${APP_CACHE_PERMISSIONS_TTL:300}
+  messaging:
+    relay-poll-ms: ${APP_MESSAGING_RELAY_POLL_MS:1000}
+  storage:
+    provider: ${APP_STORAGE_PROVIDER:local}
+    local:
+      root-dir: ${APP_STORAGE_LOCAL_ROOT:/tmp/school-erp-storage}
+    s3:
+      endpoint: ${APP_STORAGE_S3_ENDPOINT:http://localhost:9000}
+      bucket: ${APP_STORAGE_S3_BUCKET:school-erp-files}
+      region: ${APP_STORAGE_S3_REGION:ap-southeast-1}
+      access-key: ${APP_STORAGE_S3_ACCESS_KEY:minioadmin}
+      secret-key: ${APP_STORAGE_S3_SECRET_KEY:minioadmin}
+    malware:
+      scanner: ${APP_MALWARE_SCANNER:noop}
+      clamav-host: ${CLAMAV_HOST:localhost}
+      clamav-port: ${CLAMAV_PORT:3310}
+  cors:
+    allowed-origins: ${APP_CORS_ORIGINS:http://localhost:5173}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    persist-authorization: true
+  api-docs:
+    path: /v3/api-docs

@@ -1,0 +1,20 @@
+# Production profile: every secret must come from the environment. A missing value fails the startup.
+app:
+  master:
+    url: ${APP_MASTER_URL}
+    username: ${APP_MASTER_USER}
+    password: ${APP_MASTER_PASSWORD}
+  platform:
+    api-key: ${APP_PLATFORM_API_KEY}
+  crypto:
+    key: ${APP_CRYPTO_KEY}
+  jwt:
+    secret: ${APP_JWT_SECRET}
+  cors:
+    allowed-origins: ${APP_CORS_ORIGINS}
+
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
