@@ -4,8 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.schoolerp.shared.tenancy.TenantFilter;
+import com.schoolerp.shared.tenancy.TenantRegistry;
+import com.schoolerp.shared.tenancy.TenantRoutingDataSource;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
@@ -18,29 +23,51 @@ import org.springframework.test.web.servlet.MvcResult;
 @AutoConfigureMockMvc
 class AcademicStructureTenantIsolationTest {
 
+    private static final String ALPHA = "alphacad";
+    private static final String BETA = "betacad";
+
     @Autowired private MockMvc mockMvc;
-    @Autowired private JdbcTemplate jdbcTemplate;
+    @Autowired @Qualifier("masterJdbcTemplate") private JdbcTemplate masterJdbc;
+    @Autowired private TenantRegistry tenantRegistry;
+    @Autowired private TenantRoutingDataSource routingDataSource;
+
+    @BeforeEach
+    void setUp() {
+        cleanupTenant(ALPHA);
+        cleanupTenant(BETA);
+    }
+
+    @AfterEach
+    void tearDown() {
+        cleanupTenant(ALPHA);
+        cleanupTenant(BETA);
+    }
+
+    private void cleanupTenant(String slug) {
+        routingDataSource.evict(slug);
+        tenantRegistry.evict(slug);
+        masterJdbc.update("DELETE FROM tenants WHERE slug = ?", slug);
+        masterJdbc.execute("DROP DATABASE IF EXISTS `school" + slug + "`");
+        masterJdbc.execute("DROP USER IF EXISTS 't" + slug + "'@'%'");
+    }
 
     @Test
     void tenantIsolationWorksForAcademicStructure() throws Exception {
-        String alpha = "alphacad";
-        String beta = "betacad";
+        provisionTenant(ALPHA, "Alpha Academy", "admin@alphacad.school", "Alpha@12345");
+        provisionTenant(BETA, "Beta Academy", "admin@betacad.school", "Beta@12345");
 
-        provisionTenant(alpha, "Alpha Academy", "admin@alphacad.school", "Alpha@12345");
-        provisionTenant(beta, "Beta Academy", "admin@betacad.school", "Beta@12345");
+        String alphaToken = login(ALPHA, "admin@alphacad.school", "Alpha@12345");
+        String betaToken = login(BETA, "admin@betacad.school", "Beta@12345");
 
-        String alphaToken = login(alpha, "admin@alphacad.school", "Alpha@12345");
-        String betaToken = login(beta, "admin@betacad.school", "Beta@12345");
+        mockMvc.perform(postAcademicSession(ALPHA, alphaToken, "2026", "Academic Year 2026", "YEARLY"));
+        mockMvc.perform(postAcademicSession(BETA, betaToken, "2026F", "Fall 2026", "SEMESTER"));
 
-        mockMvc.perform(postAcademicSession(alpha, alphaToken, "2026", "Academic Year 2026", "YEARLY"));
-        mockMvc.perform(postAcademicSession(beta, betaToken, "2026F", "Fall 2026", "SEMESTER"));
-
-        MvcResult alphaList = mockMvc.perform(getAcademicSessions(alpha, alphaToken)).andReturn();
+        MvcResult alphaList = mockMvc.perform(getAcademicSessions(ALPHA, alphaToken)).andReturn();
         String alphaJson = alphaList.getResponse().getContentAsString();
         assertThat(alphaJson).contains("Academic Year 2026");
         assertThat(alphaJson).doesNotContain("Fall 2026");
 
-        MvcResult betaList = mockMvc.perform(getAcademicSessions(beta, betaToken)).andReturn();
+        MvcResult betaList = mockMvc.perform(getAcademicSessions(BETA, betaToken)).andReturn();
         String betaJson = betaList.getResponse().getContentAsString();
         assertThat(betaJson).contains("Fall 2026");
         assertThat(betaJson).doesNotContain("Academic Year 2026");
@@ -103,4 +130,3 @@ class AcademicStructureTenantIsolationTest {
                 .param("size", "20");
     }
 }
-

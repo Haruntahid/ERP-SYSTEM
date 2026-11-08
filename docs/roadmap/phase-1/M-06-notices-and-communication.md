@@ -4,7 +4,7 @@
 |---|---|
 | **ID** | `M-06` |
 | **Title** | Notice Board and Targeted School Communication |
-| **Status** | `PROPOSED` |
+| **Status** | `DONE` |
 | **Priority** | `P1` |
 | **Depends On** | `F-04, F-05, F-06, M-01, M-03` |
 | **Blocks** | `None` |

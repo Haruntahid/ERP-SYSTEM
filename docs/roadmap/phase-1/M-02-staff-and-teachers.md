@@ -4,7 +4,7 @@
 |---|---|
 | **ID** | `M-02` |
 | **Title** | Staff, Teachers, and Subject-Section Assignments |
-| **Status** | `PROPOSED` |
+| **Status** | `DONE` |
 | **Priority** | `P0` |
 | **Depends On** | `F-01, F-04, F-06, F-10, M-01` |
 | **Blocks** | `M-04` |

@@ -4,7 +4,7 @@
 |---|---|
 | **ID** | `M-05` |
 | **Title** | Fees, Invoices, Immutable Ledger, Payment Gateways, and Reconciliation |
-| **Status** | `PROPOSED` |
+| **Status** | `DONE` |
 | **Priority** | `P0 (Highest Risk)` |
 | **Depends On** | `F-04, F-05, F-07, F-09, F-10, M-01, M-03` |
 | **Blocks** | `None` |

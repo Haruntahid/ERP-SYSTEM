@@ -1,0 +1,13 @@
+package com.schoolerp.fees.infrastructure;
+
+import com.schoolerp.fees.domain.Payment;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface PaymentRepository extends JpaRepository<Payment, Long> {
+    Optional<Payment> findByIdempotencyKey(String idempotencyKey);
+    List<Payment> findAllByStudentIdOrderByIdDesc(Long studentId);
+    List<Payment> findAllByOrderByIdDesc();
+}
+

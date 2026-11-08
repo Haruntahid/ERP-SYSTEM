@@ -76,7 +76,7 @@ public class AcademicController {
     public record SaveAcademicClassRequest(@NotNull Long departmentId, @NotBlank @Size(max = 40) String code,
             @NotBlank @Size(max = 120) String name, @Min(1) int numericLevel) {}
 
-    public record SaveSectionRequest(@NotNull Long classId, @NotNull Long shiftId, @NotNull Long roomId,
+    public record SaveSectionRequest(@NotNull Long classId, Long shiftId, Long roomId,
             @NotBlank @Size(max = 40) String code, @NotBlank @Size(max = 100) String name,
             @Min(1) int capacity) {}
 
@@ -203,9 +203,6 @@ public class AcademicController {
     @PreAuthorize("@perm.has(authentication, 'academic.read')")
     @Operation(summary = "List sections")
     public List<SectionSummary> listSections(@RequestParam(required = false) Long classId) {
-        if (classId == null) {
-            return List.of();
-        }
         return academicStructureService.listSectionsByClass(classId).stream().map(SectionSummary::from).toList();
     }
 

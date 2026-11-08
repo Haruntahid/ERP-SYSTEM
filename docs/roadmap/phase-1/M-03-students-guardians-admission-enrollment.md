@@ -4,7 +4,7 @@
 |---|---|
 | **ID** | `M-03` |
 | **Title** | Students, Guardians, Admission Workflow, and Session Enrollment |
-| **Status** | `PROPOSED` |
+| **Status** | `DONE` |
 | **Priority** | `P0` |
 | **Depends On** | `F-01, F-04, F-06, F-07, F-10, M-01` |
 | **Blocks** | `M-04, M-05, M-06` |

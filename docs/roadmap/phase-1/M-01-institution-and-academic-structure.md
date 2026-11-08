@@ -4,7 +4,7 @@
 |---|---|
 | **ID** | `M-01` |
 | **Title** | Institution and Academic Structure |
-| **Status** | `PROPOSED` |
+| **Status** | `DONE` |
 | **Priority** | `P0` |
 | **Depends On** | `F-08` |
 | **Blocks** | `M-02, M-03, M-04, M-05, M-06` |

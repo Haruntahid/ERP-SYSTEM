@@ -4,7 +4,7 @@
 |---|---|
 | **ID** | `M-04` |
 | **Title** | Student and Staff Attendance with Leave and Guardian Alerts |
-| **Status** | `PROPOSED` |
+| **Status** | `DONE` |
 | **Priority** | `P0` |
 | **Depends On** | `F-04, F-05, F-09, M-01, M-02, M-03` |
 | **Blocks** | `None` |

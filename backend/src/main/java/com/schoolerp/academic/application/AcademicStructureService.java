@@ -95,6 +95,9 @@ public class AcademicStructureService {
 
     @Transactional(readOnly = true)
     public List<Section> listSectionsByClass(Long classId) {
+        if (classId == null) {
+            return sectionRepository.findAllByDeletedAtIsNull(Pageable.ofSize(100)).getContent();
+        }
         return sectionRepository.findAllByAcademicClassIdAndDeletedAtIsNull(classId);
     }
 
