@@ -74,6 +74,7 @@ public class AcademicSession {
     public Instant getUpdatedAt() { return updatedAt; }
     public Instant getDeletedAt() { return deletedAt; }
 
+    public void setCode(String code) { this.code = code; this.updatedAt = Instant.now(); }
     public void setName(String name) { this.name = name; this.updatedAt = Instant.now(); }
     public void setSessionType(String sessionType) { this.sessionType = sessionType; this.updatedAt = Instant.now(); }
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; this.updatedAt = Instant.now(); }

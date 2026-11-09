@@ -131,7 +131,38 @@ public class AcademicStructureService {
             campus.setPhone(phone);
             return campusRepository.save(campus);
         }
-        return campusRepository.save(new Campus(code, name));
+        Campus campus = new Campus(code, name);
+        campus.setAddress(address);
+        campus.setPhone(phone);
+        return campusRepository.save(campus);
+    }
+
+    @Transactional
+    public Campus updateCampus(Long id, String code, String name, String address, String phone) {
+        Campus campus = campusRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Campus not found"));
+        if (code != null && !code.isBlank() && !code.equals(campus.getCode())) {
+            campusRepository.findByCodeAndDeletedAtIsNull(code.trim()).ifPresent(other -> {
+                if (!other.getId().equals(id)) {
+                    throw new ApiException(HttpStatus.CONFLICT, "Campus code already exists");
+                }
+            });
+            campus.setCode(code.trim());
+        }
+        if (name != null && !name.isBlank()) {
+            campus.setName(name.trim());
+        }
+        campus.setAddress(address);
+        campus.setPhone(phone);
+        return campusRepository.save(campus);
+    }
+
+    @Transactional
+    public void deleteCampus(Long id) {
+        Campus campus = campusRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Campus not found"));
+        campus.softDelete();
+        campusRepository.save(campus);
     }
 
     @Transactional
@@ -146,12 +177,38 @@ public class AcademicStructureService {
 
     @Transactional
     public AcademicClass saveClass(Long departmentId, String code, String name, int numericLevel) {
-        Department department = departmentRepository.findByIdAndDeletedAtIsNull(departmentId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Department not found"));
-        if (academicClassRepository.findByDepartmentIdAndCodeAndDeletedAtIsNull(departmentId, code).isPresent()) {
+        Department department = (departmentId != null ? departmentRepository.findByIdAndDeletedAtIsNull(departmentId) : Optional.<Department>empty())
+                .orElseGet(this::getDefaultDepartment);
+        if (academicClassRepository.findByDepartmentIdAndCodeAndDeletedAtIsNull(department.getId(), code).isPresent()) {
             throw new ApiException(HttpStatus.CONFLICT, "Class code already exists in department");
         }
         return academicClassRepository.save(new AcademicClass(department, code, name, numericLevel));
+    }
+
+    @Transactional
+    public AcademicClass updateClass(Long id, Long departmentId, String code, String name, int numericLevel) {
+        AcademicClass academicClass = academicClassRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Class not found"));
+        if (departmentId != null) {
+            departmentRepository.findByIdAndDeletedAtIsNull(departmentId)
+                    .ifPresent(academicClass::setDepartment);
+        }
+        if (code != null && !code.isBlank() && !code.equals(academicClass.getCode())) {
+            Long deptId = academicClass.getDepartment().getId();
+            academicClassRepository.findByDepartmentIdAndCodeAndDeletedAtIsNull(deptId, code.trim()).ifPresent(other -> {
+                if (!other.getId().equals(id)) {
+                    throw new ApiException(HttpStatus.CONFLICT, "Class code already exists in department");
+                }
+            });
+            academicClass.setCode(code.trim());
+        }
+        if (name != null && !name.isBlank()) {
+            academicClass.setName(name.trim());
+        }
+        if (numericLevel >= 1) {
+            academicClass.setNumericLevel(numericLevel);
+        }
+        return academicClassRepository.save(academicClass);
     }
 
     @Transactional
@@ -173,11 +230,62 @@ public class AcademicStructureService {
     }
 
     @Transactional
+    public Section updateSection(Long id, Long classId, Long shiftId, Long roomId, String code, String name, int capacity) {
+        Section section = sectionRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Section not found"));
+        if (classId != null && !classId.equals(section.getAcademicClass().getId())) {
+            AcademicClass targetClass = academicClassRepository.findByIdAndDeletedAtIsNull(classId)
+                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Class not found"));
+            section.setAcademicClass(targetClass);
+        }
+        if (code != null && !code.isBlank() && !code.equals(section.getCode())) {
+            Long targetClassId = section.getAcademicClass().getId();
+            sectionRepository.findByAcademicClassIdAndCodeAndDeletedAtIsNull(targetClassId, code.trim()).ifPresent(other -> {
+                if (!other.getId().equals(id)) {
+                    throw new ApiException(HttpStatus.CONFLICT, "Section code already exists in class");
+                }
+            });
+            section.setCode(code.trim());
+        }
+        if (name != null && !name.isBlank()) {
+            section.setName(name.trim());
+        }
+        if (capacity >= 1) {
+            section.setCapacity(capacity);
+        }
+        return sectionRepository.save(section);
+    }
+
+    @Transactional
     public Subject saveSubject(String code, String name, String subjectType, BigDecimal creditHours) {
         if (subjectRepository.findByCodeAndDeletedAtIsNull(code).isPresent()) {
             throw new ApiException(HttpStatus.CONFLICT, "Subject code already exists");
         }
         return subjectRepository.save(new Subject(code, name, subjectType, creditHours));
+    }
+
+    @Transactional
+    public Subject updateSubject(Long id, String code, String name, String subjectType, BigDecimal creditHours) {
+        Subject subject = subjectRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Subject not found"));
+        if (code != null && !code.isBlank() && !code.equals(subject.getCode())) {
+            subjectRepository.findByCodeAndDeletedAtIsNull(code.trim()).ifPresent(other -> {
+                if (!other.getId().equals(id)) {
+                    throw new ApiException(HttpStatus.CONFLICT, "Subject code already exists");
+                }
+            });
+            subject.setCode(code.trim());
+        }
+        if (name != null && !name.isBlank()) {
+            subject.setName(name.trim());
+        }
+        if (subjectType != null && !subjectType.isBlank()) {
+            subject.setSubjectType(subjectType.trim());
+        }
+        if (creditHours != null) {
+            subject.setCreditHours(creditHours);
+        }
+        return subjectRepository.save(subject);
     }
 
     @Transactional

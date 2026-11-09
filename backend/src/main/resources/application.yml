@@ -82,7 +82,7 @@ app:
   jwt:
     # Base64 encoded >=32 byte HMAC secret. Development default only.
     secret: ${APP_JWT_SECRET:dGhpcy1pcy1hLWRldi1qd3Qtc2VjcmV0LWtleS0zMi1ieXRlcy1sb25nIQ==}
-    access-token-ttl-seconds: ${APP_JWT_ACCESS_TTL:900}
+    access-token-ttl-seconds: ${APP_JWT_ACCESS_TTL:3600}
     refresh-token-ttl-seconds: ${APP_JWT_REFRESH_TTL:604800}
   rate-limit:
     auth-requests-per-minute: ${APP_RATE_LIMIT_AUTH_RPM:10}

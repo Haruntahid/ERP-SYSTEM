@@ -28,6 +28,19 @@ interface Section {
   name: string;
 }
 
+interface StudentLookup {
+  id: number;
+  studentCode: string;
+  firstName: string;
+  lastName: string;
+}
+
+interface StaffLookup {
+  id: number;
+  employeeCode: string;
+  fullName: string;
+}
+
 type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED' | 'HALF_DAY';
 
 interface StudentRollCallRow {
@@ -94,6 +107,8 @@ export function AttendancePage() {
 
   const [staffRows, setStaffRows] = useState<StaffAttendanceSheetRow[]>([]);
   const [leaves, setLeaves] = useState<LeaveApplication[]>([]);
+  const [studentList, setStudentList] = useState<StudentLookup[]>([]);
+  const [staffList, setStaffList] = useState<StaffLookup[]>([]);
 
   // Leave form
   const [leaveApplicantType, setLeaveApplicantType] = useState<'STUDENT' | 'STAFF'>('STUDENT');
@@ -108,21 +123,27 @@ export function AttendancePage() {
 
   const loadLookups = async () => {
     try {
-      const [sessRes, clsRes, secRes, leavesRes] = await Promise.all([
+      const [sessRes, clsRes, secRes, leavesRes, stuRes, stfRes] = await Promise.all([
         api.get<PageResponse<AcademicSession> | AcademicSession[]>('/api/v1/academic/sessions?size=100'),
         api.get<PageResponse<SchoolClass> | SchoolClass[]>('/api/v1/academic/classes?size=100'),
         api.get<PageResponse<Section> | Section[]>('/api/v1/academic/sections?size=100'),
-        api.get<PageResponse<LeaveApplication> | LeaveApplication[]>('/api/v1/attendance/leaves?size=100')
+        api.get<PageResponse<LeaveApplication> | LeaveApplication[]>('/api/v1/attendance/leaves?size=100'),
+        api.get<PageResponse<StudentLookup> | StudentLookup[]>('/api/v1/students?size=100'),
+        api.get<PageResponse<StaffLookup> | StaffLookup[]>('/api/v1/staff?size=100')
       ]);
       const sessionList = unwrapList(sessRes.data);
       const classList = unwrapList(clsRes.data);
       const sectionList = unwrapList(secRes.data);
       const leaveList = unwrapList(leavesRes.data);
+      const stuItems = unwrapList(stuRes.data);
+      const stfItems = unwrapList(stfRes.data);
 
       setSessions(sessionList);
       setClasses(classList);
       setSections(sectionList);
       setLeaves(leaveList);
+      setStudentList(stuItems);
+      setStaffList(stfItems);
 
       if (sessionList[0] && selectedSessionId === 0) setSelectedSessionId(sessionList[0].id);
       if (classList[0] && selectedClassId === 0) setSelectedClassId(classList[0].id);
@@ -518,14 +539,24 @@ export function AttendancePage() {
               </select>
             </div>
             <div>
-              <label>{leaveApplicantType === 'STUDENT' ? 'Student Enrollment ID' : 'Staff ID'}</label>
-              <input
-                type="number"
+              <label>{leaveApplicantType === 'STUDENT' ? 'Select Student' : 'Select Staff Member'}</label>
+              <select
                 value={leaveTargetId}
                 onChange={(e) => setLeaveTargetId(Number(e.target.value))}
-                min={1}
                 required
-              />
+              >
+                {leaveApplicantType === 'STUDENT'
+                  ? studentList.map((stu) => (
+                      <option key={stu.id} value={stu.id}>
+                        {stu.firstName} {stu.lastName} ({stu.studentCode})
+                      </option>
+                    ))
+                  : staffList.map((stf) => (
+                      <option key={stf.id} value={stf.id}>
+                        {stf.fullName} ({stf.employeeCode})
+                      </option>
+                    ))}
+              </select>
             </div>
             <div>
               <label>Leave Type</label>

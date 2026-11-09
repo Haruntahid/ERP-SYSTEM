@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -77,6 +78,14 @@ public class StaffController {
         return staffService.saveDesignation(request.code(), request.title(), request.category());
     }
 
+    @DeleteMapping("/designations/{id}")
+    @PreAuthorize("@perm.has(authentication, 'staff.write')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Soft-delete a designation")
+    public void deleteDesignation(@PathVariable Long id) {
+        staffService.deleteDesignation(id);
+    }
+
     @GetMapping
     @PreAuthorize("@perm.has(authentication, 'staff.read')")
     @Operation(summary = "List staff")
@@ -95,6 +104,23 @@ public class StaffController {
         return staffService.createStaff(
                 request.campusId(), request.departmentId(), request.designationId(), request.employeeCode(),
                 request.firstName(), request.lastName(), request.email(), request.phone(), request.staffType(), request.joinDate());
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("@perm.has(authentication, 'staff.write')")
+    @Operation(summary = "Update a staff record")
+    public Staff updateStaff(@PathVariable Long id, @Valid @RequestBody CreateStaffRequest request) {
+        return staffService.updateStaff(
+                id, request.designationId(), request.firstName(), request.lastName(),
+                request.email(), request.phone(), request.staffType(), request.joinDate());
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("@perm.has(authentication, 'staff.write')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Soft-delete a staff record")
+    public void deleteStaff(@PathVariable Long id) {
+        staffService.deleteStaff(id);
     }
 
     @PatchMapping("/{id}/status")

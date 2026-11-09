@@ -74,6 +74,23 @@ interface StudentLedgerResponse {
   ledgerEntries: LedgerEntry[];
 }
 
+interface StudentLookup {
+  id: number;
+  studentCode: string;
+  firstName: string;
+  lastName: string;
+}
+
+interface SessionLookup {
+  id: number;
+  code: string;
+  name: string;
+}
+
+interface StudentDetailLookup {
+  enrollments?: { id: number; academicSessionId: number }[];
+}
+
 type TabKey = 'counter' | 'invoices' | 'heads' | 'ledger';
 
 export function FeesPage() {
@@ -82,6 +99,8 @@ export function FeesPage() {
   const [heads, setHeads] = useState<FeeHead[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [students, setStudents] = useState<StudentLookup[]>([]);
+  const [sessions, setSessions] = useState<SessionLookup[]>([]);
   const [ledger, setLedger] = useState<StudentLedgerResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -92,7 +111,7 @@ export function FeesPage() {
   const [payMethod, setPayMethod] = useState<'OFFLINE_CASH' | 'OFFLINE_BANK' | 'OFFLINE_CHEQUE'>('OFFLINE_CASH');
 
   // Single Invoice Form
-  const [invEnrollmentId, setInvEnrollmentId] = useState<number>(1);
+  const [invEnrollmentId] = useState<number>(1);
   const [invStudentId, setInvStudentId] = useState<number>(1);
   const [invSessionId, setInvSessionId] = useState<number>(1);
   const [invBillingMonth, setInvBillingMonth] = useState('2026-01');
@@ -112,20 +131,28 @@ export function FeesPage() {
   const loadData = async () => {
     try {
       setError(null);
-      const [headsRes, invRes, payRes] = await Promise.all([
+      const [headsRes, invRes, payRes, stuRes, sessRes] = await Promise.all([
         api.get<PageResponse<FeeHead> | FeeHead[]>('/api/v1/fees/heads'),
         api.get<PageResponse<Invoice> | Invoice[]>('/api/v1/fees/invoices?size=100'),
-        api.get<PageResponse<Payment> | Payment[]>('/api/v1/fees/payments')
+        api.get<PageResponse<Payment> | Payment[]>('/api/v1/fees/payments'),
+        api.get<PageResponse<StudentLookup> | StudentLookup[]>('/api/v1/students?size=100'),
+        api.get<PageResponse<SessionLookup> | SessionLookup[]>('/api/v1/academic/sessions?size=100')
       ]);
       const headList = unwrapList(headsRes.data);
       const invList = unwrapList(invRes.data);
       const payList = unwrapList(payRes.data);
+      const stuList = unwrapList(stuRes.data);
+      const sessList = unwrapList(sessRes.data);
 
       setHeads(headList);
       setInvoices(invList);
       setPayments(payList);
+      setStudents(stuList);
+      setSessions(sessList);
 
       if (headList[0] && invFeeHeadId === 0) setInvFeeHeadId(headList[0].id);
+      if (stuList[0] && invStudentId === 1) setInvStudentId(stuList[0].id);
+      if (sessList[0] && invSessionId === 1) setInvSessionId(sessList[0].id);
       if (invList[0] && payInvoiceId === 0) {
         setPayInvoiceId(invList[0].id);
         setPayAmount(Number(invList[0].balanceDueAmount));
@@ -182,10 +209,22 @@ export function FeesPage() {
     }
     try {
       setError(null);
+      let resolvedEnrollmentId = invEnrollmentId;
+      let resolvedSessionId = invSessionId;
+      try {
+        const detail = await api.get<StudentDetailLookup>(`/api/v1/students/${invStudentId}`);
+        const firstEnr = detail.data.enrollments?.[0];
+        if (firstEnr) {
+          resolvedEnrollmentId = firstEnr.id;
+          resolvedSessionId = firstEnr.academicSessionId;
+        }
+      } catch {
+        // Fallback to selected values
+      }
       await api.post('/api/v1/fees/invoices', {
-        enrollmentId: invEnrollmentId,
+        enrollmentId: resolvedEnrollmentId,
         studentId: invStudentId,
-        academicSessionId: invSessionId,
+        academicSessionId: resolvedSessionId,
         billingMonth: invBillingMonth,
         dueDate: invDueDate,
         lines: [
@@ -386,34 +425,32 @@ export function FeesPage() {
         <div className="stack">
           <form className="card form-grid" onSubmit={handleCreateInvoice}>
             <div>
-              <label>Student ID</label>
-              <input
-                type="number"
+              <label>Select Student</label>
+              <select
                 value={invStudentId}
                 onChange={(e) => setInvStudentId(Number(e.target.value))}
-                min={1}
                 required
-              />
+              >
+                {students.map((stu) => (
+                  <option key={stu.id} value={stu.id}>
+                    {stu.firstName} {stu.lastName} ({stu.studentCode})
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
-              <label>Enrollment ID</label>
-              <input
-                type="number"
-                value={invEnrollmentId}
-                onChange={(e) => setInvEnrollmentId(Number(e.target.value))}
-                min={1}
-                required
-              />
-            </div>
-            <div>
-              <label>Session ID</label>
-              <input
-                type="number"
+              <label>Academic Session</label>
+              <select
                 value={invSessionId}
                 onChange={(e) => setInvSessionId(Number(e.target.value))}
-                min={1}
                 required
-              />
+              >
+                {sessions.map((sess) => (
+                  <option key={sess.id} value={sess.id}>
+                    {sess.name} ({sess.code})
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label>Billing Month (YYYY-MM)</label>
@@ -581,13 +618,17 @@ export function FeesPage() {
       {activeTab === 'ledger' && (
         <div className="stack">
           <div className="card action-row">
-            <label>Student ID:</label>
-            <input
-              type="number"
+            <label>Select Student:</label>
+            <select
               value={ledgerStudentId}
               onChange={(e) => setLedgerStudentId(Number(e.target.value))}
-              min={1}
-            />
+            >
+              {students.map((stu) => (
+                <option key={stu.id} value={stu.id}>
+                  {stu.firstName} {stu.lastName} ({stu.studentCode})
+                </option>
+              ))}
+            </select>
             <button type="button" onClick={handleLoadLedger}>
               Load Immutable Ledger
             </button>

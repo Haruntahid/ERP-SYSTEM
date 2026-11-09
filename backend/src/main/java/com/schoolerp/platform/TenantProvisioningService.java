@@ -163,8 +163,8 @@ public class TenantProvisioningService {
 
             long adminUserId = Objects.requireNonNull(keyHolder.getKey()).longValue();
             tenantJdbc.update(
-                    "INSERT INTO user_roles (user_id, role_id, scope_type, scope_id) "
-                            + "SELECT ?, id, 'ALL', 0 FROM roles WHERE code = 'SCHOOL_ADMIN'",
+                    "INSERT IGNORE INTO user_roles (user_id, role_id, scope_type, scope_id) "
+                            + "SELECT ?, id, 'ALL', 0 FROM roles WHERE code IN ('SCHOOL_ADMIN', 'SUPER_ADMIN')",
                     adminUserId);
         } finally {
             ds.destroy();

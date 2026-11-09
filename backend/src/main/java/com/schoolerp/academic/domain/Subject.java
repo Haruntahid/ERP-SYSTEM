@@ -59,6 +59,7 @@ public class Subject {
     public Instant getUpdatedAt() { return updatedAt; }
     public Instant getDeletedAt() { return deletedAt; }
 
+    public void setCode(String code) { this.code = code; this.updatedAt = Instant.now(); }
     public void setName(String name) { this.name = name; this.updatedAt = Instant.now(); }
     public void setSubjectType(String subjectType) { this.subjectType = subjectType; this.updatedAt = Instant.now(); }
     public void setCreditHours(BigDecimal creditHours) { this.creditHours = creditHours; this.updatedAt = Instant.now(); }

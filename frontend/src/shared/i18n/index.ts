@@ -1,22 +1,80 @@
+import { useSyncExternalStore } from 'react';
 import { useSettings } from '../../features/settings/hooks';
 
 type Dictionary = Record<string, string>;
 
+const LOCALE_STORAGE_KEY = 'erp_locale';
+const listeners = new Set<() => void>();
+
+function getStoredLocale(): string | null {
+  try {
+    return localStorage.getItem(LOCALE_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setAppLocale(nextLocale: 'en' | 'bn'): void {
+  try {
+    localStorage.setItem(LOCALE_STORAGE_KEY, nextLocale);
+  } catch {
+    // ignore storage errors
+  }
+  listeners.forEach((listener) => listener());
+}
+
+function subscribeLocale(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
 const en: Dictionary = {
+  // Navigation
   'nav.dashboard': 'Dashboard',
+  'nav.website': 'Public School Website',
+  'nav.academic': 'Academic Structure',
+  'nav.staff': 'Staff & Teachers',
   'nav.students': 'Students & Admissions',
   'nav.attendance': 'Attendance & Leave',
   'nav.fees': 'Fees & Accounts',
   'nav.notices': 'Notice Board',
-  'nav.exams': 'Exams',
+  'nav.exams': 'Exams & Results',
   'nav.library': 'Library',
   'nav.transport': 'Transport',
-  'nav.hr': 'HR',
+  'nav.hr': 'HR & Payroll',
   'nav.analytics': 'Analytics',
   'nav.messaging': 'Event Outbox',
-  'nav.settings': 'School Settings',
+  'nav.settings': 'SuperAdmin & Settings',
 
+  // Common
+  'common.loading': 'Loading...',
+  'common.save': 'Save Changes',
+  'common.cancel': 'Cancel',
+  'common.create': 'Create',
+  'common.actions': 'Actions',
+  'common.noData': 'No records found.',
+  'common.comingSoon': 'This module is scheduled for Phase 2.',
+  'common.language': 'Language',
+  'common.switchToBn': 'বাংলা',
+  'common.switchToEn': 'EN',
+
+  // Dashboard & Auth
+  'dashboard.welcome': 'Welcome back',
+  'dashboard.subtitle': 'Complete overview of your school operations, academics, finance, and public portal.',
+  'dashboard.openWebsite': 'View Public School Website',
+  'dashboard.openSettings': 'SuperAdmin Settings & Users',
+  'login.title': 'Sign in to School ERP Portal',
+  'login.subtitle': 'Enter your SuperAdmin, Teacher, or Staff credentials to access the school workspace.',
+  'login.email': 'Email Address',
+  'login.password': 'Password',
+  'login.submit': 'Sign In to ERP',
+  'login.logout': 'Sign Out',
+  'login.backToWebsite': 'Back to Public School Website',
+
+  // Academic (M-01)
   'academic.nav.title': 'Academic Structure',
+  'academic.title': 'Institution & Academic Structure',
+  'academic.subtitle': 'Configure sessions, campuses, shifts, classes, sections, subjects, and grading scales.',
   'academic.sessions.title': 'Academic Sessions',
   'academic.sessions.status.ACTIVE': 'Active',
   'academic.sessions.status.ARCHIVED': 'Archived',
@@ -26,7 +84,10 @@ const en: Dictionary = {
   'academic.tabs.subjects': 'Subjects & Curriculum',
   'academic.tabs.campuses': 'Campuses, Shifts & Rooms',
 
+  // Staff & Teachers (M-02)
   'staff.nav.title': 'Staff & Teachers',
+  'staff.title': 'Faculty, Teachers & Staff Directory',
+  'staff.subtitle': 'Manage designations, teacher profiles, employment status, and subject-section assignments.',
   'staff.directory.title': 'Staff Directory',
   'staff.action.add': 'Add Staff Member',
   'staff.action.import': 'Bulk Import Staff',
@@ -40,6 +101,15 @@ const en: Dictionary = {
   'staff.assignments.title': 'Teacher Section & Subject Assignments',
   'staff.assignments.classTeacher': 'Class Teacher (Homeroom)',
 
+  // Students, Guardians, Admission & Enrollment (M-03)
+  'students.title': 'Students, Guardians, Admissions & Promotions',
+  'students.subtitle': 'Manage student directory, guardian contacts, online admission workflow, and session promotions.',
+  'students.admissions': 'Admission Applications',
+  'students.guardians': 'Guardians Directory',
+  'students.promotions': 'Session Promotion Wizard',
+  'students.addStudent': 'Register & Enroll Student',
+  'students.studentCode': 'Student ID',
+  'students.enroll': 'Enroll Student',
   'students.nav.directory': 'Students Directory',
   'students.nav.admissions': 'Admission Applications',
   'students.nav.promotions': 'Session Promotion',
@@ -58,6 +128,14 @@ const en: Dictionary = {
   'students.guardian.relationship.FATHER': 'Father',
   'students.guardian.relationship.MOTHER': 'Mother',
 
+  // Attendance & Leave (M-04)
+  'attendance.title': 'Student & Staff Attendance & Leave',
+  'attendance.subtitle': 'Daily section roll-call, staff attendance sheets, leave approvals, and SMS absence alerts.',
+  'attendance.studentSheet': 'Student Roll-Call Sheet',
+  'attendance.staffSheet': 'Staff Daily Attendance',
+  'attendance.leaves': 'Leave Applications',
+  'attendance.markAllPresent': 'Mark All Present',
+  'attendance.submitSheet': 'Submit Attendance Sheet',
   'attendance.nav.students': 'Student Roll-Call',
   'attendance.nav.staff': 'Staff Attendance',
   'attendance.nav.leaves': 'Leave Applications',
@@ -70,6 +148,14 @@ const en: Dictionary = {
   'attendance.sheet.lockedNotice': 'Edit window expired. Contact Registrar/Admin to unlock.',
   'attendance.edit.reasonPrompt': 'Reason for attendance modification',
 
+  // Fees, Invoices & Ledger (M-05)
+  'fees.title': 'Fees, Invoices, Counter POS & Immutable Ledger',
+  'fees.subtitle': 'Configure fee heads, issue invoices, collect counter payments, and audit the immutable ledger.',
+  'fees.counter': 'Fee Counter (POS)',
+  'fees.invoices': 'Invoices & Billing',
+  'fees.heads': 'Fee Heads & Priority',
+  'fees.ledger': 'Student Immutable Ledger',
+  'fees.recordPayment': 'Collect Payment & Issue Receipt',
   'fees.nav.counter': 'Fee Counter (POS)',
   'fees.nav.invoices': 'Invoices & Billing',
   'fees.nav.structures': 'Fee Structures & Waivers',
@@ -83,6 +169,12 @@ const en: Dictionary = {
   'fees.ledger.debit': 'Debit (Billed)',
   'fees.ledger.credit': 'Credit (Paid)',
 
+  // Notices & Communication (M-06)
+  'notices.title': 'Notice Board & Targeted Broadcasts',
+  'notices.subtitle': 'Publish school-wide or targeted class/role notices with in-app, email, and SMS dispatch.',
+  'notices.feed': 'Published Notice Feed',
+  'notices.compose': 'Compose & Manage Notices',
+  'notices.publish': 'Publish Now',
   'notices.nav.board': 'Notice Board Feed',
   'notices.nav.manage': 'Compose & Manage Notices',
   'notices.category.GENERAL': 'General',
@@ -95,17 +187,38 @@ const en: Dictionary = {
   'notices.status.PUBLISHED': 'Published',
   'notices.status.DRAFT': 'Draft',
 
-  'common.loading': 'Loading...',
-  'common.save': 'Save',
-  'common.cancel': 'Cancel',
-  'common.comingSoon': 'This module is not built yet.',
-  'dashboard.welcome': 'Welcome',
-  'login.title': 'Sign in to School Portal',
-  'login.email': 'Email Address',
-  'login.password': 'Password',
-  'login.submit': 'Sign In',
-  'login.logout': 'Sign Out',
+  // Public School Website
+  'website.nav.about': 'About Us',
+  'website.nav.academics': 'Academics',
+  'website.nav.teachers': 'Faculty & Teachers',
+  'website.nav.notices': 'Notice Board',
+  'website.nav.admission': 'Online Admission',
+  'website.nav.erpLogin': 'ERP Portal Login',
+  'website.nav.erpDashboard': 'Go to ERP Dashboard',
+  'website.hero.applyBtn': 'Apply Online for Admission',
+  'website.hero.loginBtn': 'Teacher / Admin ERP Login',
+  'website.stats.students': 'Enrolled Students',
+  'website.stats.teachers': 'Expert Faculty',
+  'website.stats.classes': 'Academic Classes',
+  'website.stats.campuses': 'Campuses',
+  'website.section.about': 'About Our Institution',
+  'website.section.principal': "Principal's Message",
+  'website.section.academics': 'Academic Classes & Curriculum',
+  'website.section.teachers': 'Our Distinguished Faculty & Teachers',
+  'website.section.notices': 'Official Notice Board & Announcements',
+  'website.section.admission': 'Online Admission Application',
+  'website.admission.subtitle': 'Submit your application online. Our admissions office will review and contact the guardian.',
+  'website.admission.submit': 'Submit Admission Application',
 
+  // SuperAdmin Settings & Users Page
+  'settings.title': 'SuperAdmin Control Center & School Settings',
+  'settings.subtitle': 'Full privilege control over branding, public website content, module policies, users, roles, and security.',
+  'settings.tab.branding': 'Branding & Public Website',
+  'settings.tab.policies': 'All ERP Module Settings',
+  'settings.tab.users': 'Users, Roles & SuperAdmin Access',
+  'settings.tab.security': 'Security, Lockouts & Cache',
+
+  // Security, Messaging & Files
   'security.lockout.badge': 'Temporarily Locked',
   'security.lockout.unlock_btn': 'Unlock Account',
   'security.lockout.unlock_success': 'User account unlocked successfully.',
@@ -139,20 +252,52 @@ const en: Dictionary = {
 };
 
 const bn: Dictionary = {
+  // Navigation
   'nav.dashboard': 'ড্যাশবোর্ড',
+  'nav.website': 'স্কুল ওয়েবসাইট (পাবলিক)',
+  'nav.academic': 'একাডেমিক কাঠামো',
+  'nav.staff': 'শিক্ষক ও কর্মচারী',
   'nav.students': 'শিক্ষার্থী ও ভর্তি',
   'nav.attendance': 'উপস্থিতি ও ছুটি',
   'nav.fees': 'ফি ও হিসাব',
   'nav.notices': 'নোটিশ বোর্ড',
-  'nav.exams': 'পরীক্ষা',
+  'nav.exams': 'পরীক্ষা ও ফলাফল',
   'nav.library': 'লাইব্রেরি',
   'nav.transport': 'পরিবহন',
-  'nav.hr': 'এইচআর',
+  'nav.hr': 'এইচআর ও বেতন',
   'nav.analytics': 'বিশ্লেষণ',
   'nav.messaging': 'ইভেন্ট আউটবক্স',
-  'nav.settings': 'স্কুল সেটিংস',
+  'nav.settings': 'সুপারঅ্যাডমিন ও সেটিংস',
 
+  // Common
+  'common.loading': 'লোড হচ্ছে...',
+  'common.save': 'পরিবর্তন সংরক্ষণ করুন',
+  'common.cancel': 'বাতিল করুন',
+  'common.create': 'তৈরি করুন',
+  'common.actions': 'পদক্ষেপ',
+  'common.noData': 'কোনো তথ্য পাওয়া যায়নি।',
+  'common.comingSoon': 'এই মডিউলটি পরবর্তী ধাপে যুক্ত হবে।',
+  'common.language': 'ভাষা',
+  'common.switchToBn': 'বাংলা',
+  'common.switchToEn': 'EN',
+
+  // Dashboard & Auth
+  'dashboard.welcome': 'স্বাগতম',
+  'dashboard.subtitle': 'আপনার প্রতিষ্ঠানের একাডেমিক, উপস্থিতি, ফি এবং ওয়েবসাইটের সম্পূর্ণ ড্যাশবোর্ড।',
+  'dashboard.openWebsite': 'পাবলিক স্কুল ওয়েবসাইট দেখুন',
+  'dashboard.openSettings': 'সুপারঅ্যাডমিন সেটিংস ও ইউজার',
+  'login.title': 'স্কুল ইআরপি পোর্টালে লগইন করুন',
+  'login.subtitle': 'সুপারঅ্যাডমিন, শিক্ষক বা কর্মচারী অ্যাকাউন্ট দিয়ে প্রবেশ করুন।',
+  'login.email': 'ইমেইল ঠিকানা',
+  'login.password': 'পাসওয়ার্ড',
+  'login.submit': 'ইআরপি-তে প্রবেশ করুন',
+  'login.logout': 'লগ আউট',
+  'login.backToWebsite': 'স্কুল ওয়েবসাইটে ফিরে যান',
+
+  // Academic (M-01)
   'academic.nav.title': 'একাডেমিক কাঠামো',
+  'academic.title': 'প্রতিষ্ঠান ও একাডেমিক কাঠামো',
+  'academic.subtitle': 'সেশন, ক্যাম্পাস, শিফট, শ্রেণি, শাখা এবং পাঠ্যক্রম পরিচালনা করুন।',
   'academic.sessions.title': 'একাডেমিক সেশন',
   'academic.sessions.status.ACTIVE': 'সক্রিয়',
   'academic.sessions.status.ARCHIVED': 'আর্কাইভকৃত',
@@ -162,7 +307,10 @@ const bn: Dictionary = {
   'academic.tabs.subjects': 'বিষয় ও পাঠ্যক্রম',
   'academic.tabs.campuses': 'ক্যাম্পাস, শিফট ও কক্ষ',
 
+  // Staff & Teachers (M-02)
   'staff.nav.title': 'শিক্ষক ও কর্মচারী',
+  'staff.title': 'শিক্ষক ও কর্মচারী ব্যবস্থাপনা',
+  'staff.subtitle': 'পদবী, শিক্ষকদের প্রোফাইল এবং শাখা-বিষয় বণ্টন পরিচালনা করুন।',
   'staff.directory.title': 'শিক্ষক ও কর্মচারী তালিকা',
   'staff.action.add': 'নতুন শিক্ষক/কর্মচারী যোগ করুন',
   'staff.action.import': 'একসাথে স্টাফ ইমপোর্ট করুন',
@@ -176,6 +324,15 @@ const bn: Dictionary = {
   'staff.assignments.title': 'শিক্ষকের শাখা ও বিষয় বণ্টন',
   'staff.assignments.classTeacher': 'শ্রেণি শিক্ষক',
 
+  // Students (M-03)
+  'students.title': 'শিক্ষার্থী, অভিভাবক, ভর্তি ও সেশন উত্তীর্ণকরণ',
+  'students.subtitle': 'শিক্ষার্থীদের তালিকা, অভিভাবক, অনলাইন ভর্তি এবং নতুন সেশনে উত্তীর্ণকরণ।',
+  'students.admissions': 'ভর্তি আবেদনসমূহ',
+  'students.guardians': 'অভিভাবক তালিকা',
+  'students.promotions': 'সেশন উত্তীর্ণকরণ',
+  'students.addStudent': 'নতুন শিক্ষার্থী ভর্তি করুন',
+  'students.studentCode': 'শিক্ষার্থী আইডি',
+  'students.enroll': 'ভর্তি সম্পন্ন করুন',
   'students.nav.directory': 'শিক্ষার্থীবৃন্দ',
   'students.nav.admissions': 'ভর্তি প্রক্রিয়া',
   'students.nav.promotions': 'সেশন উত্তীর্ণকরণ',
@@ -194,6 +351,14 @@ const bn: Dictionary = {
   'students.guardian.relationship.FATHER': 'পিতা',
   'students.guardian.relationship.MOTHER': 'মাতা',
 
+  // Attendance (M-04)
+  'attendance.title': 'শিক্ষার্থী ও শিক্ষকদের উপস্থিতি এবং ছুটি',
+  'attendance.subtitle': 'দৈনিক রোল-কল, শিক্ষক উপস্থিতি, ছুটির অনুমোদন এবং অনুপস্থিতির এসএমএস সতর্কবার্তা।',
+  'attendance.studentSheet': 'শিক্ষার্থী রোল-কল শিট',
+  'attendance.staffSheet': 'শিক্ষক ও কর্মচারী উপস্থিতি',
+  'attendance.leaves': 'ছুটির আবেদন',
+  'attendance.markAllPresent': 'সবাইকে উপস্থিত চিহ্নিত করুন',
+  'attendance.submitSheet': 'উপস্থিতি জমা দিন',
   'attendance.nav.students': 'শিক্ষার্থী উপস্থিতি',
   'attendance.nav.staff': 'শিক্ষক ও কর্মচারী উপস্থিতি',
   'attendance.nav.leaves': 'ছুটির আবেদন',
@@ -206,6 +371,14 @@ const bn: Dictionary = {
   'attendance.sheet.lockedNotice': 'সম্পাদনার সময়সীমা শেষ হয়েছে। আনলক করতে রেজিস্ট্রার/অ্যাডমিনের সাথে যোগাযোগ করুন।',
   'attendance.edit.reasonPrompt': 'উপস্থিতি পরিবর্তনের কারণ',
 
+  // Fees (M-05)
+  'fees.title': 'ফি, ইনভয়েস, কাউন্টার কালেকশন ও অপরিবর্তনীয় লেজার',
+  'fees.subtitle': 'ফি খাত নির্ধারণ, ইনভয়েস তৈরি, নগদ/ব্যাংক ফি গ্রহণ এবং শিক্ষার্থী লেজার হিসাব।',
+  'fees.counter': 'ফি কাউন্টার (POS)',
+  'fees.invoices': 'ইনভয়েস ও বিলিং',
+  'fees.heads': 'ফি খাত ও অগ্রাধিকার',
+  'fees.ledger': 'শিক্ষার্থী ফি লেজার',
+  'fees.recordPayment': 'ফি গ্রহণ ও রশিদ প্রদান করুন',
   'fees.nav.counter': 'ফি কাউন্টার',
   'fees.nav.invoices': 'ইনভয়েস সমূহ',
   'fees.nav.structures': 'ফি কাঠামো ও মওকুফ',
@@ -219,6 +392,12 @@ const bn: Dictionary = {
   'fees.ledger.debit': 'ডেবিট (ধার্য)',
   'fees.ledger.credit': 'ক্রেডিট (জমা)',
 
+  // Notices (M-06)
+  'notices.title': 'নোটিশ বোর্ড ও বার্তা প্রেরণ',
+  'notices.subtitle': 'সকল শিক্ষার্থী, নির্দিষ্ট শ্রেণি বা শিক্ষকদের জন্য নোটিশ ও এসএমএস/ইমেইল প্রকাশ করুন।',
+  'notices.feed': 'প্রকাশিত নোটিশ বোর্ড',
+  'notices.compose': 'নতুন নোটিশ তৈরি ও ব্যবস্থাপনা',
+  'notices.publish': 'প্রকাশ করুন',
   'notices.nav.board': 'নোটিশ বোর্ড',
   'notices.nav.manage': 'নোটিশ ব্যবস্থাপনা',
   'notices.category.GENERAL': 'সাধারণ',
@@ -231,17 +410,38 @@ const bn: Dictionary = {
   'notices.status.PUBLISHED': 'প্রকাশিত',
   'notices.status.DRAFT': 'খসড়া',
 
-  'common.loading': 'লোড হচ্ছে...',
-  'common.save': 'সংরক্ষণ করুন',
-  'common.cancel': 'বাতিল করুন',
-  'common.comingSoon': 'এই মডিউলটি এখনও তৈরি হয়নি।',
-  'dashboard.welcome': 'স্বাগতম',
-  'login.title': 'স্কুল পোর্টালে সাইন ইন করুন',
-  'login.email': 'ইমেইল ঠিকানা',
-  'login.password': 'পাসওয়ার্ড',
-  'login.submit': 'সাইন ইন',
-  'login.logout': 'সাইন আউট',
+  // Public School Website
+  'website.nav.about': 'পরিচিতি',
+  'website.nav.academics': 'একাডেমিক',
+  'website.nav.teachers': 'শিক্ষকমণ্ডলী',
+  'website.nav.notices': 'নোটিশ বোর্ড',
+  'website.nav.admission': 'অনলাইন ভর্তি',
+  'website.nav.erpLogin': 'ইআরপি লগইন',
+  'website.nav.erpDashboard': 'ইআরপি ড্যাশবোর্ডে যান',
+  'website.hero.applyBtn': 'অনলাইনে ভর্তির আবেদন করুন',
+  'website.hero.loginBtn': 'শিক্ষক / অ্যাডমিন ইআরপি লগইন',
+  'website.stats.students': 'অধ্যয়নরত শিক্ষার্থী',
+  'website.stats.teachers': 'অভিজ্ঞ শিক্ষকমণ্ডলী',
+  'website.stats.classes': 'একাডেমিক শ্রেণি',
+  'website.stats.campuses': 'ক্যাম্পাস',
+  'website.section.about': 'প্রতিষ্ঠান পরিচিতি',
+  'website.section.principal': 'অধ্যক্ষের বাণী',
+  'website.section.academics': 'একাডেমিক শ্রেণি ও পাঠ্যক্রম',
+  'website.section.teachers': 'আমাদের অভিজ্ঞ শিক্ষকমণ্ডলী',
+  'website.section.notices': 'নোটিশ বোর্ড ও বিজ্ঞপ্তি',
+  'website.section.admission': 'অনলাইন ভর্তি ফরম',
+  'website.admission.subtitle': 'অনলাইনে ভর্তির আবেদন জমা দিন। আমাদের ভর্তি শাখা যাচাই করে অভিভাবকের সাথে যোগাযোগ করবে।',
+  'website.admission.submit': 'ভর্তির আবেদন জমা দিন',
 
+  // SuperAdmin Settings & Users Page
+  'settings.title': 'সুপারঅ্যাডমিন কন্ট্রোল সেন্টার ও সেটিংস',
+  'settings.subtitle': 'ব্র্যান্ডিং, পাবলিক ওয়েবসাইট, সকল ইআরপি সেটিংস, ইউজার এবং রোল সম্পূর্ণ নিয়ন্ত্রণ করুন।',
+  'settings.tab.branding': 'ব্র্যান্ডিং ও স্কুল ওয়েবসাইট',
+  'settings.tab.policies': 'সকল ইআরপি মডিউল সেটিংস',
+  'settings.tab.users': 'ইউজার, রোল ও সুপারঅ্যাডমিন অ্যাক্সেস',
+  'settings.tab.security': 'নিরাপত্তা, লকআউট ও ক্যাশ',
+
+  // Security, Messaging & Files
   'security.lockout.badge': 'সাময়িকভাবে লক করা',
   'security.lockout.unlock_btn': 'অ্যাকাউন্ট আনলক করুন',
   'security.lockout.unlock_success': 'ব্যবহারকারীর অ্যাকাউন্ট সফলভাবে আনলক করা হয়েছে।',
@@ -278,8 +478,12 @@ const dictionaries: Record<string, Dictionary> = { en, bn };
 
 export function useI18n() {
   const { settings } = useSettings();
-  const locale = settings['school.locale'] ?? 'en';
+  const storedLocale = useSyncExternalStore(subscribeLocale, getStoredLocale, () => null);
+  const defaultSchoolLocale = settings['locale.default'] ?? settings['school.locale'] ?? 'en';
+  const locale = (storedLocale ?? defaultSchoolLocale) === 'bn' ? 'bn' : 'en';
   const dictionary = dictionaries[locale] ?? en;
   const t = (key: string): string => dictionary[key] ?? en[key] ?? key;
-  return { t, locale };
+  const setLocale = (next: 'en' | 'bn') => setAppLocale(next);
+  const toggleLocale = () => setAppLocale(locale === 'bn' ? 'en' : 'bn');
+  return { t, locale, setLocale, toggleLocale };
 }

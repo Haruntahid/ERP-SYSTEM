@@ -16,9 +16,14 @@ import { StudentsPage } from '../features/students/StudentsPage';
 import { AttendancePage } from '../features/attendance/AttendancePage';
 import { FeesPage } from '../features/fees/FeesPage';
 import { NoticesPage } from '../features/notices/NoticesPage';
+import { SchoolWebsitePage } from '../features/website/SchoolWebsitePage';
+import { SuperAdminSettingsPage } from '../features/settings/SuperAdminSettingsPage';
 
 const implementedPaths = new Set([
   '/',
+  '/site',
+  '/website',
+  '/settings',
   '/messaging',
   '/academic',
   '/staff',
@@ -38,9 +43,12 @@ export function App() {
           <TenantGate>
             <ThemeProvider>
               <Routes>
+                <Route path="/site" element={<SchoolWebsitePage />} />
+                <Route path="/website" element={<SchoolWebsitePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route element={<Layout />}>
                   <Route index element={<DashboardPage />} />
+                  <Route path="/settings" element={<SuperAdminSettingsPage />} />
                   <Route path="/messaging" element={<OutboxDashboardPage />} />
                   <Route path="/academic" element={<AcademicPage />} />
                   <Route path="/academic/sessions" element={<AcademicSessionsPage />} />

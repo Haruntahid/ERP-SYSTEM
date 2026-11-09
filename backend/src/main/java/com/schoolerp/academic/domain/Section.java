@@ -71,8 +71,10 @@ public class Section {
     public Instant getUpdatedAt() { return updatedAt; }
     public Instant getDeletedAt() { return deletedAt; }
 
+    public void setAcademicClass(AcademicClass academicClass) { this.academicClass = academicClass; this.updatedAt = Instant.now(); }
     public void setShift(Shift shift) { this.shift = shift; this.updatedAt = Instant.now(); }
     public void setRoom(Room room) { this.room = room; this.updatedAt = Instant.now(); }
+    public void setCode(String code) { this.code = code; this.updatedAt = Instant.now(); }
     public void setName(String name) { this.name = name; this.updatedAt = Instant.now(); }
     public void setCapacity(int capacity) { this.capacity = capacity; this.updatedAt = Instant.now(); }
     public void softDelete() { this.deletedAt = Instant.now(); this.updatedAt = Instant.now(); }

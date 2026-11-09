@@ -73,7 +73,7 @@ public class AcademicController {
     public record SaveDepartmentRequest(@NotNull Long campusId, @NotBlank @Size(max = 40) String code,
             @NotBlank @Size(max = 150) String name) {}
 
-    public record SaveAcademicClassRequest(@NotNull Long departmentId, @NotBlank @Size(max = 40) String code,
+    public record SaveAcademicClassRequest(Long departmentId, @NotBlank @Size(max = 40) String code,
             @NotBlank @Size(max = 120) String name, @Min(1) int numericLevel) {}
 
     public record SaveSectionRequest(@NotNull Long classId, Long shiftId, Long roomId,
@@ -133,6 +133,22 @@ public class AcademicController {
         return AcademicSessionSummary.from(academicSessionService.archive(id));
     }
 
+    @PutMapping("/sessions/{id}")
+    @PreAuthorize("@perm.has(authentication, 'academic.session.manage')")
+    @Operation(summary = "Update an academic session")
+    public AcademicSessionSummary updateSession(@PathVariable Long id, @Valid @RequestBody CreateAcademicSessionRequest request) {
+        return AcademicSessionSummary.from(academicSessionService.update(
+                id, request.code(), request.name(), request.sessionType(), request.startDate(), request.endDate()));
+    }
+
+    @DeleteMapping("/sessions/{id}")
+    @PreAuthorize("@perm.has(authentication, 'academic.session.manage')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Soft-delete an academic session")
+    public void deleteSession(@PathVariable Long id) {
+        academicSessionService.delete(id);
+    }
+
     @GetMapping("/campuses")
     @PreAuthorize("@perm.has(authentication, 'academic.read')")
     @Operation(summary = "List campuses")
@@ -150,6 +166,21 @@ public class AcademicController {
     @ResponseStatus(HttpStatus.CREATED)
     public CampusSummary createCampus(@Valid @RequestBody SaveCampusRequest request) {
         return CampusSummary.from(academicStructureService.saveCampus(request.code(), request.name(), request.address(), request.phone()));
+    }
+
+    @PutMapping("/campuses/{id}")
+    @PreAuthorize("@perm.has(authentication, 'academic.write')")
+    @Operation(summary = "Update campus by ID")
+    public CampusSummary updateCampus(@PathVariable Long id, @Valid @RequestBody SaveCampusRequest request) {
+        return CampusSummary.from(academicStructureService.updateCampus(id, request.code(), request.name(), request.address(), request.phone()));
+    }
+
+    @DeleteMapping("/campuses/{id}")
+    @PreAuthorize("@perm.has(authentication, 'academic.write')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Soft-delete a campus")
+    public void deleteCampus(@PathVariable Long id) {
+        academicStructureService.deleteCampus(id);
     }
 
     @GetMapping("/departments")
@@ -191,6 +222,13 @@ public class AcademicController {
         return AcademicClassSummary.from(academicStructureService.saveClass(request.departmentId(), request.code(), request.name(), request.numericLevel()));
     }
 
+    @PutMapping("/classes/{id}")
+    @PreAuthorize("@perm.has(authentication, 'academic.write')")
+    @Operation(summary = "Update academic class")
+    public AcademicClassSummary updateClass(@PathVariable Long id, @Valid @RequestBody SaveAcademicClassRequest request) {
+        return AcademicClassSummary.from(academicStructureService.updateClass(id, request.departmentId(), request.code(), request.name(), request.numericLevel()));
+    }
+
     @DeleteMapping("/classes/{id}")
     @PreAuthorize("@perm.has(authentication, 'academic.write')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -212,6 +250,13 @@ public class AcademicController {
     @ResponseStatus(HttpStatus.CREATED)
     public SectionSummary createSection(@Valid @RequestBody SaveSectionRequest request) {
         return SectionSummary.from(academicStructureService.saveSection(request.classId(), request.shiftId(), request.roomId(), request.code(), request.name(), request.capacity()));
+    }
+
+    @PutMapping("/sections/{id}")
+    @PreAuthorize("@perm.has(authentication, 'academic.write')")
+    @Operation(summary = "Update section")
+    public SectionSummary updateSection(@PathVariable Long id, @Valid @RequestBody SaveSectionRequest request) {
+        return SectionSummary.from(academicStructureService.updateSection(id, request.classId(), request.shiftId(), request.roomId(), request.code(), request.name(), request.capacity()));
     }
 
     @DeleteMapping("/sections/{id}")
@@ -239,6 +284,21 @@ public class AcademicController {
     @ResponseStatus(HttpStatus.CREATED)
     public SubjectSummary createSubject(@Valid @RequestBody SaveSubjectRequest request) {
         return SubjectSummary.from(academicStructureService.saveSubject(request.code(), request.name(), request.subjectType(), request.creditHours()));
+    }
+
+    @PutMapping("/subjects/{id}")
+    @PreAuthorize("@perm.has(authentication, 'academic.write')")
+    @Operation(summary = "Update subject")
+    public SubjectSummary updateSubject(@PathVariable Long id, @Valid @RequestBody SaveSubjectRequest request) {
+        return SubjectSummary.from(academicStructureService.updateSubject(id, request.code(), request.name(), request.subjectType(), request.creditHours()));
+    }
+
+    @DeleteMapping("/subjects/{id}")
+    @PreAuthorize("@perm.has(authentication, 'academic.write')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Soft-delete a subject")
+    public void deleteSubject(@PathVariable Long id) {
+        academicStructureService.deleteSubject(id);
     }
 
     @GetMapping("/classes/{classId}/subjects")

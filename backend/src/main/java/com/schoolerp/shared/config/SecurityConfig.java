@@ -75,6 +75,7 @@ public class SecurityConfig {
                                 "/actuator/info",
                                 "/api/v1/platform/**",
                                 "/api/v1/tenant/config",
+                                "/api/v1/public/**",
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/refresh",
                                 "/api/v1/files/stream/**")

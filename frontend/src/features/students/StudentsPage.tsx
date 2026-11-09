@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useI18n } from '../../shared/i18n';
 import { api, getErrorMessage } from '../../shared/api/client';
+import { ConfirmDeleteModal, DeleteTarget } from '../../shared/components/ConfirmDeleteModal';
 
 interface PageResponse<T> {
   content: T[];
@@ -97,6 +98,7 @@ export function StudentsPage() {
   const [selectedStudentDetail, setSelectedStudentDetail] = useState<StudentDetailResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
   // Create Student Form
   const [firstName, setFirstName] = useState('');
@@ -324,6 +326,7 @@ export function StudentsPage() {
 
   return (
     <section className="stack">
+      <ConfirmDeleteModal target={deleteTarget} onClose={() => setDeleteTarget(null)} />
       <div>
         <h2>{t('students.title')}</h2>
         <p className="muted">{t('students.subtitle')}</p>
@@ -517,8 +520,19 @@ export function StudentsPage() {
                         Profile
                       </button>
                       {s.status !== 'ARCHIVED' && (
-                        <button type="button" className="danger" onClick={() => handleArchiveStudent(s.id)}>
-                          Archive
+                        <button
+                          type="button"
+                          className="danger"
+                          onClick={() =>
+                            setDeleteTarget({
+                              title: `Delete / Archive Student: ${s.firstName} ${s.lastName} (${s.studentCode})`,
+                              onConfirm: async () => {
+                                await handleArchiveStudent(s.id);
+                              },
+                            })
+                          }
+                        >
+                          Delete
                         </button>
                       )}
                     </td>

@@ -124,6 +124,41 @@ public class SettingsService {
         return saved;
     }
 
+    @Transactional
+    public Map<String, String> bulkImport(Map<String, String> incoming) {
+        if (incoming != null) {
+            for (Map.Entry<String, String> entry : incoming.entrySet()) {
+                String k = entry.getKey() == null ? "" : entry.getKey().trim();
+                String v = entry.getValue() == null ? "" : entry.getValue();
+                if (!k.isEmpty() && k.matches("^[a-z0-9_.]{1,100}$")) {
+                    AppSetting existing = repository.findById(k).orElse(null);
+                    if (existing == null) {
+                        repository.save(new AppSetting(k, v));
+                    } else {
+                        existing.changeValue(v);
+                        repository.save(existing);
+                    }
+                }
+            }
+            TenantContext.get().ifPresent(tenantSlug -> {
+                redisTemplate.deleteTenantKey("settings", "all");
+                eventPublisher.publishEvent(new SettingsUpdatedInternalEvent(tenantSlug, "*"));
+            });
+        }
+        return loadFromDb();
+    }
+
+    @Transactional
+    public void deleteKey(String key) {
+        if (repository.existsById(key)) {
+            repository.deleteById(key);
+            TenantContext.get().ifPresent(tenantSlug -> {
+                redisTemplate.deleteTenantKey("settings", "all");
+                eventPublisher.publishEvent(new SettingsUpdatedInternalEvent(tenantSlug, key));
+            });
+        }
+    }
+
     private Map<String, String> loadFromDb() {
         Map<String, String> map = new LinkedHashMap<>();
         for (AppSetting s : repository.findAll()) {

@@ -60,6 +60,7 @@ public class Campus {
     public Instant getUpdatedAt() { return updatedAt; }
     public Instant getDeletedAt() { return deletedAt; }
 
+    public void setCode(String code) { this.code = code; this.updatedAt = Instant.now(); }
     public void setName(String name) { this.name = name; this.updatedAt = Instant.now(); }
     public void setAddress(String address) { this.address = address; this.updatedAt = Instant.now(); }
     public void setPhone(String phone) { this.phone = phone; this.updatedAt = Instant.now(); }

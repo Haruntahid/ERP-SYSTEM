@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useI18n } from '../../shared/i18n';
 import { api, getErrorMessage } from '../../shared/api/client';
+import { ConfirmDeleteModal, DeleteTarget } from '../../shared/components/ConfirmDeleteModal';
 
 interface PageResponse<T> {
   content: T[];
@@ -36,6 +37,7 @@ export function NoticesPage() {
   const [allNotices, setAllNotices] = useState<Notice[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
   // Compose Notice Form
   const [title, setTitle] = useState('');
@@ -127,6 +129,7 @@ export function NoticesPage() {
 
   return (
     <section className="stack">
+      <ConfirmDeleteModal target={deleteTarget} onClose={() => setDeleteTarget(null)} />
       <div>
         <h2>{t('notices.title')}</h2>
         <p className="muted">{t('notices.subtitle')}</p>
@@ -306,9 +309,16 @@ export function NoticesPage() {
                         <button
                           type="button"
                           className="danger"
-                          onClick={() => handleArchive(n.id)}
+                          onClick={() =>
+                            setDeleteTarget({
+                              title: `Delete / Archive Notice: ${n.title}`,
+                              onConfirm: async () => {
+                                await handleArchive(n.id);
+                              },
+                            })
+                          }
                         >
-                          Archive
+                          Delete
                         </button>
                       )}
                     </td>

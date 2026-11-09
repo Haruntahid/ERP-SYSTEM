@@ -60,6 +60,15 @@ public class StaffService {
                 .orElseGet(() -> designationRepository.save(new Designation(normalizedCode, title.trim(), category)));
     }
 
+    @Transactional
+    public void deleteDesignation(Long id) {
+        Designation desig = designationRepository.findById(id)
+                .filter(d -> d.getDeletedAt() == null)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Designation not found"));
+        desig.softDelete();
+        designationRepository.save(desig);
+    }
+
     @Transactional(readOnly = true)
     public Page<Staff> listStaff(Pageable pageable) {
         return staffRepository.findAllByDeletedAtIsNull(pageable);
@@ -90,7 +99,12 @@ public class StaffService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "First and last name are required");
         }
         if (employeeCode == null || employeeCode.isBlank()) {
-            employeeCode = EmployeeCodeGenerator.generate("EMP-{YEAR}-{SEQ:4}", 1L);
+            long seq = staffRepository.count() + 1;
+            employeeCode = EmployeeCodeGenerator.generate("EMP-{YEAR}-{SEQ:4}", seq);
+            while (staffRepository.existsByEmployeeCodeAndDeletedAtIsNull(employeeCode)) {
+                seq++;
+                employeeCode = EmployeeCodeGenerator.generate("EMP-{YEAR}-{SEQ:4}", seq);
+            }
         }
         if (staffRepository.existsByEmployeeCodeAndDeletedAtIsNull(employeeCode)) {
             throw new ApiException(HttpStatus.CONFLICT, "Employee code already exists");
@@ -101,6 +115,47 @@ public class StaffService {
         auditService.record("STAFF_CREATED", "Staff", String.valueOf(saved.getId()), null,
                 Map.of("employeeCode", saved.getEmployeeCode(), "fullName", saved.getFullName(), "campusId", saved.getCampusId()));
         return saved;
+    }
+
+    @Transactional
+    public Staff updateStaff(
+            Long id,
+            Long designationId,
+            String firstName,
+            String lastName,
+            String email,
+            String phone,
+            String staffType,
+            LocalDate joinDate) {
+        Staff staff = findByIdOrThrow(id);
+        if (designationId != null) {
+            staff.setDesignationId(designationId);
+        }
+        if (firstName != null && !firstName.isBlank()) {
+            staff.setFirstName(firstName.trim());
+        }
+        if (lastName != null && !lastName.isBlank()) {
+            staff.setLastName(lastName.trim());
+        }
+        staff.setEmail(email == null || email.isBlank() ? null : email.trim());
+        if (phone != null && !phone.isBlank()) {
+            staff.setPhone(phone.trim());
+        }
+        if (staffType != null && !staffType.isBlank()) {
+            staff.setStaffType(staffType.trim());
+        }
+        if (joinDate != null) {
+            staff.setJoinDate(joinDate);
+        }
+        return staffRepository.save(staff);
+    }
+
+    @Transactional
+    public void deleteStaff(Long id) {
+        Staff staff = findByIdOrThrow(id);
+        staff.softDelete();
+        staffRepository.save(staff);
+        auditService.record("STAFF_DELETED", "Staff", String.valueOf(id), null, Map.of("employeeCode", staff.getEmployeeCode()));
     }
 
     @Transactional
@@ -135,7 +190,8 @@ public class StaffService {
         TeacherSubjectAssignment assignment = new TeacherSubjectAssignment(academicSessionId, staffId, sectionId, subjectId, classTeacher, roleType);
         TeacherSubjectAssignment saved = assignmentRepository.save(assignment);
         auditService.record("TEACHER_ASSIGNED", "TeacherSubjectAssignment", String.valueOf(saved.getId()), null,
-                Map.of("academicSessionId", academicSessionId, "staffId", staffId, "sectionId", sectionId, "subjectId", subjectId));
+                Map.of("academicSessionId", academicSessionId, "staffId", staffId, "sectionId", sectionId,
+                        "subjectId", subjectId != null ? subjectId : "HOMEROOM"));
         return saved;
     }
 

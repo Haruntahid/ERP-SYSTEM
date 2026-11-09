@@ -85,6 +85,42 @@ public class AcademicSessionService {
                 .toList();
     }
 
+    @Transactional
+    public AcademicSession update(Long id, String code, String name, String sessionType, LocalDate startDate, LocalDate endDate) {
+        AcademicSession session = getByIdOrThrow(id);
+        if (startDate != null && endDate != null && !endDate.isAfter(startDate)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Session end date must be after the start date");
+        }
+        if (code != null && !code.isBlank() && !code.equals(session.getCode())) {
+            academicSessionRepository.findByCodeAndDeletedAtIsNull(code.trim()).ifPresent(existing -> {
+                if (!existing.getId().equals(id)) {
+                    throw new ApiException(HttpStatus.CONFLICT, "Academic session code already exists");
+                }
+            });
+            session.setCode(code.trim());
+        }
+        if (name != null && !name.isBlank()) {
+            session.setName(name.trim());
+        }
+        if (sessionType != null && !sessionType.isBlank()) {
+            session.setSessionType(sessionType.trim());
+        }
+        if (startDate != null) {
+            session.setStartDate(startDate);
+        }
+        if (endDate != null) {
+            session.setEndDate(endDate);
+        }
+        return academicSessionRepository.save(session);
+    }
+
+    @Transactional
+    public void delete(Long id) {
+        AcademicSession session = getByIdOrThrow(id);
+        session.softDelete();
+        academicSessionRepository.save(session);
+    }
+
     @Transactional(readOnly = true)
     public org.springframework.data.domain.Page<AcademicSession> list(org.springframework.data.domain.Pageable pageable) {
         return academicSessionRepository.findAllByDeletedAtIsNull(pageable);

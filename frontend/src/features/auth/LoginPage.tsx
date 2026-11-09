@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api, getErrorMessage, setAuthTokens } from '../../shared/api/client';
+import { useTenantConfig } from '../tenant/hooks';
 import { useI18n } from '../../shared/i18n';
 
 interface TokenResponse {
@@ -11,9 +12,12 @@ interface TokenResponse {
 }
 
 export function LoginPage() {
-  const { t } = useI18n();
+  const { data: tenant } = useTenantConfig();
+  const { t, locale, setLocale } = useI18n();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('admin@greenwood.school');
+
+  const defaultEmail = tenant?.slug ? `admin@${tenant.slug}.school` : 'admin@policeline.school';
+  const [email, setEmail] = useState(defaultEmail);
   const [password, setPassword] = useState('Admin@12345');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,31 +38,71 @@ export function LoginPage() {
   };
 
   return (
-    <form className="center-card" onSubmit={handleSubmit}>
-      <h2>{t('login.title')}</h2>
-      {error && <p className="error">{error}</p>}
-      <label>
-        {t('login.email')}
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="admin@greenwood.school"
-        />
-      </label>
-      <label>
-        {t('login.password')}
-        <input
-          type="password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </label>
-      <button type="submit" disabled={loading}>
-        {loading ? t('common.loading') : t('login.submit')}
-      </button>
-    </form>
+    <div className="auth-wrapper">
+      <form className="center-card" onSubmit={handleSubmit}>
+        <div className="page-header">
+          <span className="badge active">{tenant?.name ?? 'School ERP'}</span>
+          <div className="lang-switch">
+            <button
+              type="button"
+              className={locale === 'en' ? 'active' : ''}
+              onClick={() => setLocale('en')}
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              className={locale === 'bn' ? 'active' : ''}
+              onClick={() => setLocale('bn')}
+            >
+              বাংলা
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <h2 style={{ marginBottom: 4 }}>{t('login.title')}</h2>
+          <p className="muted" style={{ margin: 0 }}>
+            {t('login.subtitle')}
+          </p>
+        </div>
+
+        {error && <div className="error-text">{error}</div>}
+
+        <label>
+          {t('login.email')}
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={defaultEmail}
+          />
+        </label>
+
+        <label>
+          {t('login.password')}
+          <input
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </label>
+
+        <button type="submit" disabled={loading}>
+          {loading ? t('common.loading') : t('login.submit')}
+        </button>
+
+        <div className="page-header" style={{ paddingTop: 8, borderTop: '1px solid var(--color-border)' }}>
+          <Link to="/site" className="muted">
+            &larr; {t('login.backToWebsite')}
+          </Link>
+          <Link to="/platform" className="muted">
+            Platform Console
+          </Link>
+        </div>
+      </form>
+    </div>
   );
 }

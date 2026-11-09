@@ -9,13 +9,18 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import java.util.Map;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Per school configuration (branding, locale, grading scale...). Stored in the school's own database. */
@@ -55,5 +60,27 @@ public class SettingsController {
             @PathVariable @Pattern(regexp = "^[a-z0-9_.]{1,100}$") String key,
             @Valid @RequestBody UpdateSettingRequest request) {
         return SettingResponse.from(service.upsert(key, request.value()));
+    }
+
+    @DeleteMapping("/{key}")
+    @PreAuthorize("@perm.has(authentication, 'settings.write')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete a school setting by key (requires `settings.write`)")
+    public void delete(@PathVariable @Pattern(regexp = "^[a-z0-9_.]{1,100}$") String key) {
+        service.deleteKey(key);
+    }
+
+    @GetMapping("/export")
+    @PreAuthorize("@perm.has(authentication, 'settings.read')")
+    @Operation(summary = "Export all school settings as a JSON key-value map")
+    public Map<String, String> exportJson() {
+        return service.getCachedSettingsMap();
+    }
+
+    @PostMapping("/import")
+    @PreAuthorize("@perm.has(authentication, 'settings.write')")
+    @Operation(summary = "Bulk import school settings from a JSON key-value map")
+    public Map<String, String> importJson(@RequestBody Map<String, String> settings) {
+        return service.bulkImport(settings);
     }
 }

@@ -20,16 +20,34 @@ public record SchoolUserPrincipal(
         return email;
     }
 
+    public boolean isSuperAdmin() {
+        if (roles != null && roles.contains("SUPER_ADMIN")) {
+            return true;
+        }
+        return permissions != null
+                && permissions.stream()
+                        .anyMatch(p -> "*".equals(p.permissionCode()) && p.scopeType() == ScopeType.ALL);
+    }
+
     public boolean hasPermission(String code) {
+        if (isSuperAdmin()) {
+            return true;
+        }
         return permissions.stream()
                 .anyMatch(p -> p.permissionCode().equals(code) && p.scopeType() == ScopeType.ALL);
     }
 
     public boolean hasAnyScopePermission(String code) {
+        if (isSuperAdmin()) {
+            return true;
+        }
         return permissions.stream().anyMatch(p -> p.permissionCode().equals(code));
     }
 
     public boolean hasScopedPermission(String code, ScopeType requiredScope, long targetId) {
+        if (isSuperAdmin()) {
+            return true;
+        }
         for (ScopedPermission p : permissions) {
             if (!p.permissionCode().equals(code)) {
                 continue;
@@ -47,4 +65,3 @@ public record SchoolUserPrincipal(
         return false;
     }
 }
-

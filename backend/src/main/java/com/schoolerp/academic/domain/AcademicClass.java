@@ -71,6 +71,8 @@ public class AcademicClass {
     public Instant getUpdatedAt() { return updatedAt; }
     public Instant getDeletedAt() { return deletedAt; }
 
+    public void setDepartment(Department department) { this.department = department; this.updatedAt = Instant.now(); }
+    public void setCode(String code) { this.code = code; this.updatedAt = Instant.now(); }
     public void setName(String name) { this.name = name; this.updatedAt = Instant.now(); }
     public void setNumericLevel(int numericLevel) { this.numericLevel = numericLevel; this.updatedAt = Instant.now(); }
     public void setNextClass(AcademicClass nextClass) { this.nextClass = nextClass; this.updatedAt = Instant.now(); }
